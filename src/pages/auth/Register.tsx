@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Briefcase, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { toast } from 'sonner';
 
 const Register = () => {
   const { register } = useAuth();
@@ -14,7 +15,14 @@ const Register = () => {
     setErr('');
     if (form.password !== form.confirmPassword) return setErr('Passwords do not match.');
     if (form.password.length < 8) return setErr('Password must be at least 8 characters.');
-    register.mutate(form);
+    register.mutate(form,{
+      onSuccess: () => {
+        toast.success("Account created successfully! Please check your email to verify your account.");
+      },
+      onError: () => {
+        toast.error("Failed to create account. Please try again.");
+      }
+    });
   };
 
   return (

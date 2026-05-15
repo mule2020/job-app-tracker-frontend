@@ -4,6 +4,8 @@ import { ArrowLeft, Loader2, Briefcase } from 'lucide-react';
 import { useCreateApplication } from '../../hooks/useApplications';
 import type { ApplicationStatus } from '../../types/application.types';
 import { cleanJobDescription, wordCount } from '../../utils/textUtils';
+import { toast } from 'sonner';
+
 
 const STATUS_OPTIONS: { value: ApplicationStatus; label: string; color: string }[] = [
   { value: 'PENDING', label: 'Pending', color: 'text-amber-600' },
@@ -50,6 +52,7 @@ const ApplicationCreate = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+      const toastId = toast.loading("Creating job application...");
     create.mutate(
       {
         company: form.company,
@@ -62,7 +65,17 @@ const ApplicationCreate = () => {
         notes: form.notes || undefined,
         appliedAt: form.appliedAt || undefined,
       },
-      { onSuccess: (app) => navigate(`/applications/${app.id}`) }
+      {
+      onSuccess: (app) => {
+        toast.dismiss(toastId);
+        toast.success("Application created successfully!");
+        navigate(`/applications/${app.id}`);
+      },
+      onError: (err: any) => {
+        toast.dismiss(toastId);
+        toast.error(err?.response?.data?.message || "Failed to create application");
+      },
+    }
     );
   };
 

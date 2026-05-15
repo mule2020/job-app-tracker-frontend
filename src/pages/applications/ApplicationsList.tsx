@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useApplications, useDeleteApplication } from '../../hooks/useApplications';
 import type { Application, ApplicationStatus } from '../../types/application.types';
+import { toast } from 'sonner';
 
 // ── Status config ─────────────────────────────────────────
 const STATUS_CONFIG: Record<ApplicationStatus, { label: string; bg: string; text: string; dot: string }> = {
@@ -90,11 +91,26 @@ const ApplicationsList = () => {
   );
 
   const handleDelete = () => {
-    if (!deleteTarget) return;
-    deleteMutation.mutate(deleteTarget.id, {
-      onSuccess: () => setDeleteTarget(null),
-    });
-  };
+  if (!deleteTarget) return;
+
+  const toastId = toast.loading("Deleting application...");
+
+  deleteMutation.mutate(
+    deleteTarget.id,
+    {
+      onSuccess: () => {
+        toast.dismiss(toastId);
+        toast.success("Application deleted");
+        setDeleteTarget(null);
+      },
+      onError: (err: any) => {
+        toast.dismiss(toastId);
+        toast.error(err?.response?.data?.message || "Failed to delete application");
+      },
+    }
+  );
+};
+
 
   return (
     <div className="space-y-5 animate-fadeIn">

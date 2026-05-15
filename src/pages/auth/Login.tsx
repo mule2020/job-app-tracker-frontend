@@ -4,6 +4,7 @@ import { Briefcase, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { login } from '../../api/auth.api';
 import { useAuthContext } from '../../context/AuthContext';
+import { toast } from 'sonner';
 
 const Login = () => {
   const { setAuth }  = useAuthContext();
@@ -19,8 +20,12 @@ const Login = () => {
         res.refreshToken!,
         { email: res.email!, isVerified: res.isVerified! }
       );
+      toast.success("Logged in successfully!");
       navigate('/dashboard');
     },
+    onError: () => {
+      toast.error("Invalid email or password. Please try again.");
+    }
   });
 
   return (

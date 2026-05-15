@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useApplications } from '../../hooks/useApplications';
 import { useGenerateResume, useSaveResume } from '../../hooks/useResumes';
+import { toast } from 'sonner';
 
 // ── Rendered resume viewer ────────────────────────────────
 const ResumeContent = ({ content }: { content: string }) => {
@@ -69,20 +70,20 @@ const Divider = () => <div className="flex-1 h-px bg-slate-200 hidden sm:block" 
 
 // ── Main ──────────────────────────────────────────────────
 const ResumeGenerate = () => {
-  const navigate         = useNavigate();
-  const [searchParams]   = useSearchParams();
-  const preselectedId    = searchParams.get('applicationId');
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preselectedId = searchParams.get('applicationId');
 
   const { data: appsData, isLoading: appsLoading } = useApplications(0, 100);
   const apps = appsData?.content ?? [];
 
   const generateMutation = useGenerateResume();
-  const saveMutation     = useSaveResume();
+  const saveMutation = useSaveResume();
 
   const [selectedAppId, setSelectedAppId] = useState('');
-  const [content, setContent]             = useState('');
-  const [editMode, setEditMode]           = useState(false);
-  const [step, setStep]                   = useState<1 | 2 | 3>(1);
+  const [content, setContent] = useState('');
+  const [editMode, setEditMode] = useState(false);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
 
   useEffect(() => {
     if (preselectedId) { setSelectedAppId(preselectedId); }
@@ -107,7 +108,7 @@ const ResumeGenerate = () => {
   const handleSave = () => {
     saveMutation.mutate(
       { applicationId: selectedAppId, generatedContent: content },
-      { onSuccess: () => { setStep(3); setTimeout(() => navigate('/resumes'), 1800); } }
+      { onSuccess: () => { toast.success("Resume saved successfully!"); setStep(3); setTimeout(() => navigate('/resumes'), 1800); }, onError: () => { toast.error("Failed to save resume. Please try again."); } }
     );
   };
 
@@ -122,11 +123,11 @@ const ResumeGenerate = () => {
 
       {/* Step bar */}
       <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-5 py-4 shadow-sm">
-        <Step n={1} label="Select Job"   active={step === 1} done={step > 1} />
+        <Step n={1} label="Select Job" active={step === 1} done={step > 1} />
         <Divider />
         <Step n={2} label="Review & Edit" active={step === 2} done={step > 2} />
         <Divider />
-        <Step n={3} label="Saved!"        active={step === 3} done={false} />
+        <Step n={3} label="Saved!" active={step === 3} done={false} />
       </div>
 
       {/* ── Step 1 — Select application ── */}

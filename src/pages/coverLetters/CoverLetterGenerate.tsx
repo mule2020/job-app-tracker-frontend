@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useApplications } from '../../hooks/useApplications';
 import { useGenerateCoverLetter, useSaveCoverLetter } from '../../hooks/useCoverLetters';
+import { toast } from 'sonner';
 
 // ── Cover letter renderer ─────────────────────────────────
 const CoverLetterContent = ({ content }: { content: string }) => {
@@ -110,9 +111,13 @@ const CoverLetterGenerate = () => {
       { applicationId: selectedAppId, content },
       {
         onSuccess: () => {
+          toast.success("Cover letter saved successfully!");
           setStep(3);
           setTimeout(() => navigate('/cover-letters'), 1800);
         },
+        onError: () => {
+          toast.error("Failed to save cover letter. Please try again.");
+        }
       }
     );
   };

@@ -7,6 +7,7 @@ import {
 import { useApplication, useUpdateApplication, useDeleteApplication } from '../../hooks/useApplications';
 import type { ApplicationStatus, UpdateApplicationRequest } from '../../types/application.types';
 import { cleanJobDescription, wordCount } from '../../utils/textUtils';
+import { toast } from 'sonner';
 
 const STATUS_CONFIG: Record<ApplicationStatus, { label: string; bg: string; text: string; dot: string; border: string }> = {
   PENDING: { label: 'Pending', bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400', border: 'border-amber-200' },
@@ -114,10 +115,14 @@ const ApplicationDetails = () => {
       { id: app.id, data: payload },
       {
         onSuccess: () => {
+          toast.success("Application updated successfully!");
           setEditing(false);
           setSaved(true);
           setTimeout(() => setSaved(false), 3000);
         },
+        onError: () => {
+          toast.error("Failed to update application. Please try again.");
+        }
       }
     );
   };

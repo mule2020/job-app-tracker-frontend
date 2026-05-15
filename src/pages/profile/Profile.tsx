@@ -7,6 +7,7 @@ import {
 import { useProfile, useUpdateProfile } from '../../hooks/useProfile';
 import { useAuthContext } from '../../context/AuthContext';
 import type { ProfileRequest } from '../../types/profile.types';
+import { toast } from 'sonner';
 
 // ── Completion checker ────────────────────────────────────
 const getCompletion = (form: ProfileRequest) => {
@@ -131,9 +132,13 @@ const Profile = () => {
     e.preventDefault();
     updateMutation.mutate(form, {
       onSuccess: () => {
+        toast.success("Profile updated successfully!");
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
       },
+      onError: () => {
+        toast.error("Failed to update profile. Please try again.");
+      }
     });
   };
 
