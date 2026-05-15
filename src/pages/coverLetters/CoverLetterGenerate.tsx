@@ -2,53 +2,39 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Wand2, Save, Loader2, RefreshCw,
-  Mail, Building2, Briefcase, CheckCircle2,
-  AlertCircle, Sparkles, Eye, Pencil
+  Mail, Building2, CheckCircle2,
+  AlertCircle, Download, FileDown, Eye, Pencil
 } from 'lucide-react';
 import { useApplications } from '../../hooks/useApplications';
 import { useGenerateCoverLetter, useSaveCoverLetter } from '../../hooks/useCoverLetters';
-import { toast } from 'sonner';
+import { useToast } from '../../hooks/useToast';
+import RichTextEditor from '../../components/editor/RichTextEditor';
+import { exportToPDF, exportToWord } from '../../utils/exportUtils';
 
-// ── Cover letter renderer ─────────────────────────────────
-const CoverLetterContent = ({ content }: { content: string }) => {
-  const paragraphs = content
-    .split(/\n\n+/)
-    .map(p => p.trim())
-    .filter(Boolean);
-
-  return (
-    <div className="space-y-4 text-sm leading-relaxed">
-      {paragraphs.map((para, i) => {
-        if (para.startsWith('Dear') || para.startsWith('To ')) {
-          return <p key={i} className="font-semibold text-slate-800 text-base">{para}</p>;
-        }
-        if (
-          para.startsWith('Sincerely') ||
-          para.startsWith('Best') ||
-          para.startsWith('Regards') ||
-          para.startsWith('Yours')
-        ) {
-          return (
-            <div key={i} className="pt-3 border-t border-slate-100">
-              <p className="text-slate-700 font-medium">{para}</p>
-            </div>
-          );
-        }
-        if (para.startsWith('Re:') || para.startsWith('Subject:')) {
-          return (
-            <p key={i}
-              className="font-semibold text-cyan-700 bg-cyan-50 border border-cyan-100 rounded-lg px-3 py-1.5 text-xs uppercase tracking-wider inline-block">
-              {para}
-            </p>
-          );
-        }
-        if (para.split('\n').length === 1 && para.length < 40 && i > paragraphs.length - 3) {
-          return <p key={i} className="font-bold text-slate-900">{para}</p>;
-        }
-        return <p key={i} className="text-slate-600 leading-7">{para}</p>;
-      })}
-    </div>
-  );
+// ── Convert plain text to HTML ────────────────────────────
+const textToHtml = (text: string): string => {
+  const paragraphs = text.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
+  return paragraphs.map(para => {
+    if (para.startsWith('Dear') || para.startsWith('To ')) {
+      return `<p><strong>${para}</strong></p>`;
+    }
+    if (
+      para.startsWith('Sincerely') ||
+      para.startsWith('Best') ||
+      para.startsWith('Regards') ||
+      para.startsWith('Yours')
+    ) {
+      return `<p>${para}</p>`;
+    }
+    if (para.startsWith('Re:') || para.startsWith('Subject:')) {
+      return `<p><em>${para}</em></p>`;
+    }
+    // Single lines with \n inside → preserve as separate lines
+    if (para.includes('\n')) {
+      return para.split('\n').map(line => `<p>${line.trim()}</p>`).join('');
+    }
+    return `<p>${para}</p>`;
+  }).join('');
 };
 
 // ── Step indicator ────────────────────────────────────────
@@ -74,6 +60,7 @@ const CoverLetterGenerate = () => {
   const navigate       = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectedId  = searchParams.get('applicationId');
+  const toast          = useToast();
 
   const { data: appsData, isLoading: appsLoading } = useApplications(0, 100);
   const apps = appsData?.content ?? [];
@@ -82,9 +69,10 @@ const CoverLetterGenerate = () => {
   const saveMutation     = useSaveCoverLetter();
 
   const [selectedAppId, setSelectedAppId] = useState('');
-  const [content, setContent]             = useState('');
-  const [editMode, setEditMode]           = useState(false);
+  const [rawContent, setRawContent]       = useState('');
+  const [htmlContent, setHtmlContent]     = useState('');
   const [step, setStep]                   = useState<1 | 2 | 3>(1);
+  const [exporting, setExporting]         = useState(false);
 
   useEffect(() => {
     if (preselectedId) setSelectedAppId(preselectedId);
@@ -98,34 +86,63 @@ const CoverLetterGenerate = () => {
       { applicationId: selectedAppId },
       {
         onSuccess: (res) => {
-          setContent(res.content);
+          setRawContent(res.content);
+          setHtmlContent(textToHtml(res.content));
           setStep(2);
-          setEditMode(false);
         },
+        onError: () => toast.error('Generation failed. Make sure your profile is complete.'),
       }
     );
   };
 
   const handleSave = () => {
     saveMutation.mutate(
-      { applicationId: selectedAppId, content },
+      { applicationId: selectedAppId, content: rawContent },
       {
         onSuccess: () => {
-          toast.success("Cover letter saved successfully!");
+          toast.success('Cover letter saved successfully!');
           setStep(3);
           setTimeout(() => navigate('/cover-letters'), 1800);
         },
-        onError: () => {
-          toast.error("Failed to save cover letter. Please try again.");
-        }
+        onError: () => toast.error('Failed to save cover letter. Please try again.'),
       }
     );
   };
 
-  return (
-    <div className="max-w-3xl mx-auto space-y-5 animate-fadeIn">
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      await exportToPDF(
+        'cover-letter-export-area',
+        `${selectedApp?.company ?? 'cover-letter'}-cover-letter`
+      );
+      toast.success('PDF exported!');
+    } catch {
+      toast.error('PDF export failed.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
-      {/* Back */}
+  const handleExportWord = async () => {
+    setExporting(true);
+    try {
+      await exportToWord(
+        htmlContent,
+        `${selectedApp?.company ?? 'cover-letter'}-cover-letter`,
+        `${selectedApp?.jobTitle ?? 'Cover Letter'} — ${selectedApp?.company ?? ''}`
+      );
+      toast.success('Word document exported!');
+    } catch {
+      toast.error('Word export failed.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-5 animate-fadeIn">
+
       <Link to="/cover-letters"
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors">
         <ArrowLeft className="w-4 h-4" /> Back to Cover Letters
@@ -135,12 +152,12 @@ const CoverLetterGenerate = () => {
       <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-5 py-4 shadow-sm">
         <Step n={1} label="Select Job"    active={step === 1} done={step > 1} />
         <Divider />
-        <Step n={2} label="Review & Edit" active={step === 2} done={step > 2} />
+        <Step n={2} label="Edit & Export" active={step === 2} done={step > 2} />
         <Divider />
         <Step n={3} label="Saved!"        active={step === 3} done={false} />
       </div>
 
-      {/* ── Step 1 — Select app ── */}
+      {/* ── Step 1 ── */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-cyan-50 flex items-center justify-center">
@@ -155,9 +172,6 @@ const CoverLetterGenerate = () => {
               Personalised, human-toned, under 300 words
             </p>
           </div>
-          <span className="ml-auto inline-flex items-center gap-1 text-xs text-cyan-600 bg-cyan-50 border border-cyan-100 px-2.5 py-1 rounded-full">
-            <Sparkles className="w-3 h-3" /> AI Powered
-          </span>
         </div>
 
         <div className="px-6 py-5 space-y-4">
@@ -172,7 +186,8 @@ const CoverLetterGenerate = () => {
               <select value={selectedAppId}
                 onChange={e => {
                   setSelectedAppId(e.target.value);
-                  setContent('');
+                  setRawContent('');
+                  setHtmlContent('');
                   setStep(1);
                 }}
                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors">
@@ -207,8 +222,7 @@ const CoverLetterGenerate = () => {
               </div>
               {!selectedApp.jobDescription && (
                 <div className="shrink-0 flex items-center gap-1 text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg">
-                  <AlertCircle className="w-3 h-3" />
-                  No job description
+                  <AlertCircle className="w-3 h-3" /> No job description
                 </div>
               )}
             </div>
@@ -217,9 +231,10 @@ const CoverLetterGenerate = () => {
           {/* Info box */}
           {selectedApp?.jobDescription && (
             <div className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 flex items-start gap-2">
-              <Briefcase className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+              <Mail className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
               <p className="text-xs text-slate-500 leading-relaxed">
-                The AI will use your <span className="font-medium text-slate-600">profile</span>,{' '}
+                The AI will use your{' '}
+                <span className="font-medium text-slate-600">profile</span>,{' '}
                 <span className="font-medium text-slate-600">generated resume</span> (if available), and the{' '}
                 <span className="font-medium text-slate-600">job description</span> to write a tailored cover letter.
               </p>
@@ -233,7 +248,7 @@ const CoverLetterGenerate = () => {
               className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm shadow-cyan-600/20">
               {generateMutation.isPending
                 ? <><Loader2 className="w-4 h-4 animate-spin" />Writing…</>
-                : content
+                : rawContent
                   ? <><RefreshCw className="w-4 h-4" />Regenerate</>
                   : <><Wand2 className="w-4 h-4" />Generate Cover Letter</>}
             </button>
@@ -253,17 +268,17 @@ const CoverLetterGenerate = () => {
         </div>
       </div>
 
-      {/* ── Step 2 — Review & Edit ── */}
-      {content && step === 2 && (
+      {/* ── Step 2 — Rich Text Editor ── */}
+      {htmlContent && step === 2 && (
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden animate-fadeInUp">
 
           {/* Toolbar */}
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-cyan-500" />
               <h2 className="text-sm font-semibold text-slate-700"
                 style={{ fontFamily: 'Syne, sans-serif' }}>
-                Generated Cover Letter
+                Edit Cover Letter
               </h2>
               {selectedApp && (
                 <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg">
@@ -271,42 +286,43 @@ const CoverLetterGenerate = () => {
                 </span>
               )}
             </div>
-            <button onClick={() => setEditMode(!editMode)}
-              className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors
-                ${editMode
-                  ? 'bg-cyan-600 text-white border-cyan-600'
-                  : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
-              {editMode
-                ? <><Eye className="w-3.5 h-3.5" />Preview</>
-                : <><Pencil className="w-3.5 h-3.5" />Edit</>}
-            </button>
+
+            {/* Export buttons */}
+            <div className="flex items-center gap-2">
+              <button onClick={handleExportPDF} disabled={exporting}
+                className="inline-flex items-center gap-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                <FileDown className="w-3.5 h-3.5" /> PDF
+              </button>
+              <button onClick={handleExportWord} disabled={exporting}
+                className="inline-flex items-center gap-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                <Download className="w-3.5 h-3.5" /> Word
+              </button>
+            </div>
           </div>
 
-          {/* Content */}
-          <div className="p-6">
-            {editMode ? (
-              <textarea value={content} onChange={e => setContent(e.target.value)} rows={20}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 font-mono leading-relaxed focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors resize-none" />
-            ) : (
-              <div className="bg-white border border-slate-100 rounded-xl px-8 py-7 shadow-sm min-h-[380px]">
-                {/* Letter header decoration */}
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-50 flex items-center justify-center">
-                    <Mail className="w-4 h-4 text-cyan-500" />
-                  </div>
-                  <span className="text-xs text-slate-300 font-medium uppercase tracking-widest">
-                    Cover Letter
-                  </span>
-                </div>
-                <CoverLetterContent content={content} />
-              </div>
-            )}
+          {/* Hidden PDF export area */}
+          <div id="cover-letter-export-area" className="fixed -left-[9999px] top-0 w-[794px] bg-white">
+            <div className="p-10 bg-white prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: htmlContent }} />
+          </div>
+
+          {/* Editor */}
+          <div className="p-5">
+            <RichTextEditor
+              content={htmlContent}
+              onChange={(val) => {
+                setHtmlContent(val);
+                setRawContent(val.replace(/<[^>]+>/g, '\n').replace(/\n{3,}/g, '\n\n').trim());
+              }}
+              placeholder="Your cover letter will appear here…"
+              minHeight="450px"
+            />
           </div>
 
           {/* Save bar */}
-          <div className="px-6 pb-6 flex items-center gap-3">
+          <div className="px-5 pb-5 flex items-center gap-3 border-t border-slate-100 pt-4">
             <button onClick={handleSave}
-              disabled={saveMutation.isPending || !content.trim()}
+              disabled={saveMutation.isPending || !rawContent.trim()}
               className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-60 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm shadow-cyan-600/20">
               {saveMutation.isPending
                 ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</>
