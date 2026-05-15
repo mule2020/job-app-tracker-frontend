@@ -6,15 +6,16 @@ import {
 } from 'lucide-react';
 import { useApplication, useUpdateApplication, useDeleteApplication } from '../../hooks/useApplications';
 import type { ApplicationStatus, UpdateApplicationRequest } from '../../types/application.types';
+import { cleanJobDescription, wordCount } from '../../utils/textUtils';
 
 const STATUS_CONFIG: Record<ApplicationStatus, { label: string; bg: string; text: string; dot: string; border: string }> = {
-  PENDING:      { label: 'Pending',      bg: 'bg-amber-50',   text: 'text-amber-700',   dot: 'bg-amber-400',   border: 'border-amber-200'   },
-  APPLIED:      { label: 'Applied',      bg: 'bg-blue-50',    text: 'text-blue-700',    dot: 'bg-blue-400',    border: 'border-blue-200'    },
-  INTERVIEWING: { label: 'Interviewing', bg: 'bg-violet-50',  text: 'text-violet-700',  dot: 'bg-violet-400',  border: 'border-violet-200'  },
-  OFFERED:      { label: 'Offered',      bg: 'bg-cyan-50',    text: 'text-cyan-700',    dot: 'bg-cyan-400',    border: 'border-cyan-200'    },
-  ACCEPTED:     { label: 'Accepted',     bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-400', border: 'border-emerald-200' },
-  REJECTED:     { label: 'Rejected',     bg: 'bg-red-50',     text: 'text-red-700',     dot: 'bg-red-400',     border: 'border-red-200'     },
-  WITHDRAWN:    { label: 'Withdrawn',    bg: 'bg-slate-50',   text: 'text-slate-600',   dot: 'bg-slate-400',   border: 'border-slate-200'   },
+  PENDING: { label: 'Pending', bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400', border: 'border-amber-200' },
+  APPLIED: { label: 'Applied', bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-400', border: 'border-blue-200' },
+  INTERVIEWING: { label: 'Interviewing', bg: 'bg-violet-50', text: 'text-violet-700', dot: 'bg-violet-400', border: 'border-violet-200' },
+  OFFERED: { label: 'Offered', bg: 'bg-cyan-50', text: 'text-cyan-700', dot: 'bg-cyan-400', border: 'border-cyan-200' },
+  ACCEPTED: { label: 'Accepted', bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-400', border: 'border-emerald-200' },
+  REJECTED: { label: 'Rejected', bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-400', border: 'border-red-200' },
+  WITHDRAWN: { label: 'Withdrawn', bg: 'bg-slate-50', text: 'text-slate-600', dot: 'bg-slate-400', border: 'border-slate-200' },
 };
 
 const ALL_STATUSES = Object.keys(STATUS_CONFIG) as ApplicationStatus[];
@@ -63,16 +64,16 @@ const DeleteModal = ({ company, jobTitle, onConfirm, onCancel, loading }: {
 );
 
 const ApplicationDetails = () => {
-  const { id }     = useParams<{ id: string }>();
-  const navigate   = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const { data: app, isLoading, isError } = useApplication(id!);
   const updateMutation = useUpdateApplication();
   const deleteMutation = useDeleteApplication();
 
-  const [editing, setEditing]       = useState(false);
+  const [editing, setEditing] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
-  const [saved, setSaved]           = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const [form, setForm] = useState<FormState>({
     company: '', jobTitle: '', jobDescription: '', status: 'APPLIED',
@@ -82,15 +83,15 @@ const ApplicationDetails = () => {
   const startEdit = () => {
     if (!app) return;
     setForm({
-      company:        app.company,
-      jobTitle:       app.jobTitle,
+      company: app.company,
+      jobTitle: app.jobTitle,
       jobDescription: app.jobDescription ?? '',
-      status:         app.status,
-      jobUrl:         app.jobUrl       ?? '',
-      salaryRange:    app.salaryRange  ?? '',
-      location:       app.location     ?? '',
-      notes:          app.notes        ?? '',
-      appliedAt:      app.appliedAt    ?? '',
+      status: app.status,
+      jobUrl: app.jobUrl ?? '',
+      salaryRange: app.salaryRange ?? '',
+      location: app.location ?? '',
+      notes: app.notes ?? '',
+      appliedAt: app.appliedAt ?? '',
     });
     setEditing(true);
     setSaved(false);
@@ -99,15 +100,15 @@ const ApplicationDetails = () => {
   const handleSave = () => {
     if (!app) return;
     const payload: UpdateApplicationRequest = {
-      company:        form.company        || undefined,
-      jobTitle:       form.jobTitle       || undefined,
+      company: form.company || undefined,
+      jobTitle: form.jobTitle || undefined,
       jobDescription: form.jobDescription || undefined,
-      status:         form.status,
-      jobUrl:         form.jobUrl         || undefined,
-      salaryRange:    form.salaryRange    || undefined,
-      location:       form.location       || undefined,
-      notes:          form.notes          || undefined,
-      appliedAt:      form.appliedAt      || undefined,
+      status: form.status,
+      jobUrl: form.jobUrl || undefined,
+      salaryRange: form.salaryRange || undefined,
+      location: form.location || undefined,
+      notes: form.notes || undefined,
+      appliedAt: form.appliedAt || undefined,
     };
     updateMutation.mutate(
       { id: app.id, data: payload },
@@ -320,11 +321,22 @@ const ApplicationDetails = () => {
                 placeholder="https://" className={inputCls} />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Job Description</label>
-              <textarea value={form.jobDescription} rows={4}
-                onChange={e => setForm(p => ({ ...p, jobDescription: e.target.value }))}
-                className={`${inputCls} resize-none`} />
+            <div className="relative">
+              <textarea
+                value={form.jobDescription} rows={5}
+                onChange={e => setForm(p => ({ ...p, jobDescription: cleanJobDescription(e.target.value) }))}
+                onPaste={e => {
+                  e.preventDefault();
+                  const pasted = e.clipboardData.getData('text');
+                  setForm(p => ({ ...p, jobDescription: cleanJobDescription(pasted) }));
+                }}
+                className={`${inputCls} resize-none`}
+              />
+              {form.jobDescription && (
+                <span className="text-xs text-slate-400 mt-1 block text-right">
+                  {wordCount(form.jobDescription)} words
+                </span>
+              )}
             </div>
 
             <div>

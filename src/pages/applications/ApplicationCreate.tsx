@@ -3,15 +3,16 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Loader2, Briefcase } from 'lucide-react';
 import { useCreateApplication } from '../../hooks/useApplications';
 import type { ApplicationStatus } from '../../types/application.types';
+import { cleanJobDescription, wordCount } from '../../utils/textUtils';
 
 const STATUS_OPTIONS: { value: ApplicationStatus; label: string; color: string }[] = [
-  { value: 'PENDING',      label: 'Pending',      color: 'text-amber-600'   },
-  { value: 'APPLIED',      label: 'Applied',      color: 'text-blue-600'    },
-  { value: 'INTERVIEWING', label: 'Interviewing', color: 'text-violet-600'  },
-  { value: 'OFFERED',      label: 'Offered',      color: 'text-cyan-600'    },
-  { value: 'ACCEPTED',     label: 'Accepted',     color: 'text-emerald-600' },
-  { value: 'REJECTED',     label: 'Rejected',     color: 'text-red-600'     },
-  { value: 'WITHDRAWN',    label: 'Withdrawn',    color: 'text-slate-500'   },
+  { value: 'PENDING', label: 'Pending', color: 'text-amber-600' },
+  { value: 'APPLIED', label: 'Applied', color: 'text-blue-600' },
+  { value: 'INTERVIEWING', label: 'Interviewing', color: 'text-violet-600' },
+  { value: 'OFFERED', label: 'Offered', color: 'text-cyan-600' },
+  { value: 'ACCEPTED', label: 'Accepted', color: 'text-emerald-600' },
+  { value: 'REJECTED', label: 'Rejected', color: 'text-red-600' },
+  { value: 'WITHDRAWN', label: 'Withdrawn', color: 'text-slate-500' },
 ];
 
 const inputCls = 'w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors';
@@ -30,18 +31,18 @@ const Field = ({ label, required, hint, children }: {
 
 const ApplicationCreate = () => {
   const navigate = useNavigate();
-  const create   = useCreateApplication();
+  const create = useCreateApplication();
 
   const [form, setForm] = useState({
-    company:        '',
-    jobTitle:       '',
+    company: '',
+    jobTitle: '',
     jobDescription: '',
-    status:         'PENDING' as ApplicationStatus,
-    jobUrl:         '',
-    salaryRange:    '',
-    location:       '',
-    notes:          '',
-    appliedAt:      '',
+    status: 'PENDING' as ApplicationStatus,
+    jobUrl: '',
+    salaryRange: '',
+    location: '',
+    notes: '',
+    appliedAt: '',
   });
 
   const set = (field: string, value: string) =>
@@ -51,15 +52,15 @@ const ApplicationCreate = () => {
     e.preventDefault();
     create.mutate(
       {
-        company:        form.company,
-        jobTitle:       form.jobTitle,
-        jobDescription: form.jobDescription  || undefined,
-        status:         form.status,
-        jobUrl:         form.jobUrl          || undefined,
-        salaryRange:    form.salaryRange     || undefined,
-        location:       form.location        || undefined,
-        notes:          form.notes           || undefined,
-        appliedAt:      form.appliedAt       || undefined,
+        company: form.company,
+        jobTitle: form.jobTitle,
+        jobDescription: form.jobDescription || undefined,
+        status: form.status,
+        jobUrl: form.jobUrl || undefined,
+        salaryRange: form.salaryRange || undefined,
+        location: form.location || undefined,
+        notes: form.notes || undefined,
+        appliedAt: form.appliedAt || undefined,
       },
       { onSuccess: (app) => navigate(`/applications/${app.id}`) }
     );
@@ -147,11 +148,33 @@ const ApplicationCreate = () => {
           </div>
 
           {/* Job Description */}
-          <Field label="Job Description" hint="Paste the job posting — helps AI generate better resumes.">
-            <textarea value={form.jobDescription}
-              onChange={e => set('jobDescription', e.target.value)}
-              rows={4} placeholder="Paste job description here…"
-              className={`${inputCls} resize-none`} />
+          <Field
+            label="Job Description"
+            hint="Paste the job posting — helps AI generate better resumes and cover letters.">
+            <div className="relative">
+              <textarea
+                value={form.jobDescription}
+                onChange={e => set('jobDescription', cleanJobDescription(e.target.value))}
+                onPaste={e => {
+                  e.preventDefault();
+                  const pasted = e.clipboardData.getData('text');
+                  set('jobDescription', cleanJobDescription(pasted));
+                }}
+                rows={6}
+                placeholder="Paste job description here…"
+                className={`${inputCls} resize-none`}
+              />
+              {form.jobDescription && (
+                <div className="absolute bottom-2 right-3 flex items-center gap-2">
+                  <span className="text-xs text-slate-400">
+                    {wordCount(form.jobDescription)} words
+                  </span>
+                  {wordCount(form.jobDescription) < 50 && (
+                    <span className="text-xs text-amber-500">too short for best AI results</span>
+                  )}
+                </div>
+              )}
+            </div>
           </Field>
 
           {/* Notes */}
