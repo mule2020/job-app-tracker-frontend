@@ -1,22 +1,22 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { AuthUser } from '../types/auth.types';
-import { logoutApi } from '../api/auth.api';
+import axiosClient from '../api/axiosClient';
 
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  setAuth: (accessToken: string, refreshToken: string, user: AuthUser) => void;
+  setAuth: (accessToken: string, user: AuthUser) => void;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser]         = useState<AuthUser | null>(null);
+  const [user, setUser]           = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Rehydrate on page refresh
+  // On app load — rehydrate from localStorage
   useEffect(() => {
     const savedUser  = localStorage.getItem('user');
     const savedToken = localStorage.getItem('accessToken');
@@ -26,19 +26,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const setAuth = (accessToken: string, refreshToken: string, newUser: AuthUser) => {
+  const setAuth = (accessToken: string, newUser: AuthUser) => {
     localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('user', JSON.stringify(newUser));
+    // ← no refreshToken in localStorage anymore
     setUser(newUser);
   };
 
   const logout = async () => {
-    const storedRefresh = localStorage.getItem('refreshToken');
-    if (storedRefresh) {
-      try { await logoutApi(storedRefresh); } catch { /* ignore */ }
-    }
-    localStorage.clear();
+    try {
+      // ← no body needed — cookie sent automatically
+      await axiosClient.post('/auth/logout', {}, { withCredentials: true });
+    } catch { /* ignore */ }
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
     setUser(null);
   };
 

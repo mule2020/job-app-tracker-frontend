@@ -7,25 +7,25 @@ import { useAuthContext } from '../../context/AuthContext';
 import { toast } from 'sonner';
 
 const Login = () => {
-  const { setAuth } = useAuthContext();
-  const navigate = useNavigate();
+  const { setAuth }  = useAuthContext();
+  const navigate     = useNavigate();
   const [showPw, setShowPw] = useState(false);
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm]     = useState({ email: '', password: '' });
 
   const loginMutation = useMutation({
     mutationFn: () => login(form),
     onSuccess: (res) => {
+      // setAuth now takes 2 args no refreshToken
       setAuth(
         res.accessToken!,
-        res.refreshToken!,
         { email: res.email!, isVerified: res.isVerified! }
       );
-      toast.success("Logged in successfully!");
+      toast.success('Logged in successfully!');
       navigate('/dashboard');
     },
     onError: () => {
-      toast.error("Invalid email or password. Please try again.");
-    }
+      toast.error('Invalid email or password. Please try again.');
+    },
   });
 
   return (
@@ -41,9 +41,11 @@ const Login = () => {
             <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center">
               <Briefcase className="w-5 h-5 text-white" />
             </div>
-            <span className="font-extrabold text-xl text-white" style={{ fontFamily: 'Syne, sans-serif' }}>JobTrackr</span>
+            <span className="font-extrabold text-xl text-white"
+              style={{ fontFamily: 'Syne, sans-serif' }}>JobTrackr</span>
           </div>
-          <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Welcome back</h1>
+          <h1 className="text-2xl font-bold text-white"
+            style={{ fontFamily: 'Syne, sans-serif' }}>Welcome back</h1>
           <p className="text-slate-400 text-sm mt-1">Sign in to your account</p>
         </div>
 
@@ -53,16 +55,21 @@ const Login = () => {
               Invalid email or password. Please try again.
             </div>
           )}
-          <form onSubmit={(e) => { e.preventDefault(); loginMutation.mutate(); }} className="space-y-5">
+          <form onSubmit={(e) => { e.preventDefault(); loginMutation.mutate(); }}
+            className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Email address</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Email address
+              </label>
               <input type="email" required value={form.email}
                 onChange={e => setForm({ ...form, email: e.target.value })}
                 placeholder="you@example.com"
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Password
+              </label>
               <div className="relative">
                 <input type={showPw ? 'text' : 'password'} required value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })}
@@ -90,7 +97,10 @@ const Login = () => {
         </div>
         <p className="text-center text-sm text-slate-500 mt-6">
           Don't have an account?{' '}
-          <Link to="/register" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">Create one free</Link>
+          <Link to="/register"
+            className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+            Create one free
+          </Link>
         </p>
       </div>
     </div>

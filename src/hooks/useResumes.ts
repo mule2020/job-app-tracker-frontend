@@ -8,6 +8,7 @@ import {
   deleteResume,
 } from '../api/resume.api';
 import type { GenerateResumeRequest, SaveResumeRequest, UpdateResumeRequest } from '../types/resume.types';
+import { DASHBOARD_STATS_KEY } from './useApplications';
 
 export const RESUMES_KEY = ['resumes'];
 
@@ -24,7 +25,10 @@ export const useSaveResume = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: SaveResumeRequest) => saveResume(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: RESUMES_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: RESUMES_KEY });
+      qc.invalidateQueries({ queryKey: DASHBOARD_STATS_KEY }); 
+    },
   });
 };
 
@@ -40,6 +44,9 @@ export const useDeleteResume = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteResume(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: RESUMES_KEY }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: RESUMES_KEY, refetchType: 'all' });
+      qc.invalidateQueries({ queryKey: DASHBOARD_STATS_KEY }); 
+    },
   });
 };

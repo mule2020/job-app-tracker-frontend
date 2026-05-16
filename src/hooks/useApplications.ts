@@ -13,6 +13,7 @@ import type {
 } from '../types/application.types';
 
 export const APPLICATIONS_KEY = ['applications'];
+export const DASHBOARD_STATS_KEY = ['dashboard-stats']; 
 
 export const useApplications = (page = 0, size = 10, status?: ApplicationStatus) =>
   useQuery({
@@ -31,7 +32,10 @@ export const useCreateApplication = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateApplicationRequest) => createApplication(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: APPLICATIONS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: APPLICATIONS_KEY });
+      qc.invalidateQueries({ queryKey: DASHBOARD_STATS_KEY }); 
+    },
   });
 };
 
@@ -40,7 +44,10 @@ export const useUpdateApplication = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateApplicationRequest }) =>
       updateApplication(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: APPLICATIONS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: APPLICATIONS_KEY });
+      qc.invalidateQueries({ queryKey: DASHBOARD_STATS_KEY }); 
+    },
   });
 };
 
@@ -48,6 +55,9 @@ export const useDeleteApplication = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteApplication(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: APPLICATIONS_KEY }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: APPLICATIONS_KEY });
+      qc.invalidateQueries({ queryKey: DASHBOARD_STATS_KEY }); 
+    },
   });
 };

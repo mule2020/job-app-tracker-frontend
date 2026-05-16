@@ -11,9 +11,9 @@ export const useAuth = () => {
   const loginMutation = useMutation({
     mutationFn: (data: LoginRequest) => login(data),
     onSuccess: (res) => {
+      // ← only accessToken + user — no refreshToken
       setAuth(
         res.accessToken!,
-        res.refreshToken!,
         { email: res.email!, isVerified: res.isVerified! }
       );
       navigate('/dashboard');

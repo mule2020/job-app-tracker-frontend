@@ -5,6 +5,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api
 const axiosClient = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
 // Attach access token to every request
@@ -30,10 +31,11 @@ axiosClient.interceptors.response.use(
     const status   = error.response?.status;
 
     if (status === 401 && !original._retry) {
-      const storedRefresh = localStorage.getItem('refreshToken');
 
-      if (!storedRefresh) {
-        localStorage.clear();
+      // Don't try to refresh on auth endpoints 
+      if (original.url?.includes('/auth/')) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
         window.location.href = '/login';
         return Promise.reject(error);
       }
@@ -51,10 +53,14 @@ axiosClient.interceptors.response.use(
       isRefreshing    = true;
 
       try {
+        // Cookie sent automatically — no body needed 
         const res = await axios.post(
           `${BASE_URL}/auth/refresh`,
-          { refreshToken: storedRefresh },
-          { headers: { 'Content-Type': 'application/json' } }
+          {},
+          {
+            withCredentials: true,
+            headers: { 'Content-Type': 'application/json' },
+          }
         );
         const newAccess = res.data.accessToken;
         localStorage.setItem('accessToken', newAccess);
@@ -63,7 +69,8 @@ axiosClient.interceptors.response.use(
         return axiosClient(original);
       } catch (err) {
         processQueue(err, null);
-        localStorage.clear();
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
         window.location.href = '/login';
         return Promise.reject(err);
       } finally {
@@ -76,7 +83,6 @@ axiosClient.interceptors.response.use(
 );
 
 export default axiosClient;
-
 
 export const getErrorMessage = (error: any): string => {
   return (

@@ -12,6 +12,7 @@ import type {
   SaveCoverLetterRequest,
   UpdateCoverLetterRequest,
 } from '../types/coverLetter.types';
+import { DASHBOARD_STATS_KEY } from './useApplications';
 
 export const COVER_LETTERS_KEY = ['cover-letters'];
 
@@ -34,7 +35,10 @@ export const useSaveCoverLetter = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: SaveCoverLetterRequest) => saveCoverLetter(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: COVER_LETTERS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: COVER_LETTERS_KEY });
+      qc.invalidateQueries({ queryKey: DASHBOARD_STATS_KEY }); 
+    },
   });
 };
 
@@ -51,6 +55,9 @@ export const useDeleteCoverLetter = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteCoverLetter(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: COVER_LETTERS_KEY }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: COVER_LETTERS_KEY, refetchType: 'all' });
+      qc.invalidateQueries({ queryKey: DASHBOARD_STATS_KEY }); 
+    },
   });
 };
