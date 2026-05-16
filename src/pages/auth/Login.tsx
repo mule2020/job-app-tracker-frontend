@@ -7,10 +7,10 @@ import { useAuthContext } from '../../context/AuthContext';
 import { toast } from 'sonner';
 
 const Login = () => {
-  const { setAuth }  = useAuthContext();
-  const navigate     = useNavigate();
+  const { setAuth } = useAuthContext();
+  const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
-  const [form, setForm]     = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '' });
 
   const loginMutation = useMutation({
     mutationFn: () => login(form),
@@ -80,6 +80,12 @@ const Login = () => {
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing in…</>
                 : 'Sign In'}
             </button>
+            <div className="text-right">
+              <Link to="/forgot-password"
+                className="text-xs text-slate-500 hover:text-blue-400 transition-colors">
+                Forgot password?
+              </Link>
+            </div>
           </form>
         </div>
         <p className="text-center text-sm text-slate-500 mt-6">

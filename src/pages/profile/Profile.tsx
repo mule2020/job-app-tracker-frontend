@@ -2,14 +2,17 @@ import { useState, useEffect } from 'react';
 import {
   User, Briefcase, FileText, Phone, MapPin, Globe, Plus, X,
   Save, Loader2, CheckCircle2, AlertTriangle,
-  ChevronDown, ChevronUp
+  ChevronDown, ChevronUp,
+  Shield
 } from 'lucide-react';
 import { useProfile, useUpdateProfile } from '../../hooks/useProfile';
 import { useAuthContext } from '../../context/AuthContext';
 import type { ProfileRequest } from '../../types/profile.types';
 import { toast } from 'sonner';
+import { changePassword } from '../../api/auth.api';
+import { useMutation } from '@tanstack/react-query';
 
-// ── Completion checker ────────────────────────────────────
+//  Completion checker
 const getCompletion = (form: ProfileRequest) => {
   const fields = [
     form.fullName, form.title, form.summary,
@@ -77,11 +80,11 @@ const Skeleton = () => (
 
 // ── Main ──────────────────────────────────────────────────
 const Profile = () => {
-  const { user }              = useAuthContext();
+  const { user } = useAuthContext();
   const { data: profile, isLoading, isError } = useProfile();
-  const updateMutation        = useUpdateProfile();
+  const updateMutation = useUpdateProfile();
 
-  const [saved, setSaved]     = useState(false);
+  const [saved, setSaved] = useState(false);
   const [skillInput, setSkillInput] = useState('');
 
   const [form, setForm] = useState<ProfileRequest>({
@@ -89,21 +92,26 @@ const Profile = () => {
     baseResumeText: '', phone: '', location: '',
     linkedinUrl: '', githubUrl: '', portfolioUrl: '',
   });
+  const [pwForm, setPwForm] = useState({
+    currentPassword: '', newPassword: '', confirmPassword: ''
+  });
+  const [pwErr, setPwErr] = useState('');
+  const [showPws, setShowPws] = useState(false);
 
   // Populate form when profile loads
   useEffect(() => {
     if (profile) {
       setForm({
-        fullName:      profile.fullName      ?? '',
-        title:         profile.title         ?? '',
-        summary:       profile.summary       ?? '',
-        skills:        profile.skills        ?? [],
+        fullName: profile.fullName ?? '',
+        title: profile.title ?? '',
+        summary: profile.summary ?? '',
+        skills: profile.skills ?? [],
         baseResumeText: profile.baseResumeText ?? '',
-        phone:         profile.phone         ?? '',
-        location:      profile.location      ?? '',
-        linkedinUrl:   profile.linkedinUrl   ?? '',
-        githubUrl:     profile.githubUrl     ?? '',
-        portfolioUrl:  profile.portfolioUrl  ?? '',
+        phone: profile.phone ?? '',
+        location: profile.location ?? '',
+        linkedinUrl: profile.linkedinUrl ?? '',
+        githubUrl: profile.githubUrl ?? '',
+        portfolioUrl: profile.portfolioUrl ?? '',
       });
     }
   }, [profile]);
@@ -144,6 +152,30 @@ const Profile = () => {
 
   const completion = getCompletion(form);
 
+  const changePwMutation = useMutation({
+    mutationFn: () => changePassword(pwForm),
+    onSuccess: () => {
+      toast.success('Password changed! Please log in again on other devices.');
+      setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPwErr('');
+    },
+    onError: (error: any) => {
+      setPwErr(error?.response?.data?.message ?? 'Failed to change password.');
+    },
+  });
+
+  const handlePasswordChange = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwErr('');
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      return setPwErr('New passwords do not match.');
+    }
+    if (pwForm.newPassword.length < 8) {
+      return setPwErr('New password must be at least 8 characters.');
+    }
+    changePwMutation.mutate();
+  };
+
   if (isLoading) return (
     <div className="max-w-2xl mx-auto animate-fadeIn">
       <Skeleton />
@@ -181,11 +213,10 @@ const Profile = () => {
               </span>
             )}
           </div>
-          <span className={`text-sm font-extrabold ${
-            completion === 100 ? 'text-emerald-600' :
-            completion >= 60  ? 'text-blue-600' :
-            'text-amber-600'
-          }`} style={{ fontFamily: 'Syne, sans-serif' }}>
+          <span className={`text-sm font-extrabold ${completion === 100 ? 'text-emerald-600' :
+            completion >= 60 ? 'text-blue-600' :
+              'text-amber-600'
+            }`} style={{ fontFamily: 'Syne, sans-serif' }}>
             {completion}%
           </span>
         </div>
@@ -193,11 +224,10 @@ const Profile = () => {
         {/* Progress bar */}
         <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-500 ${
-              completion === 100 ? 'bg-emerald-500' :
-              completion >= 60  ? 'bg-blue-500' :
-              'bg-amber-500'
-            }`}
+            className={`h-full rounded-full transition-all duration-500 ${completion === 100 ? 'bg-emerald-500' :
+              completion >= 60 ? 'bg-blue-500' :
+                'bg-amber-500'
+              }`}
             style={{ width: `${completion}%` }}
           />
         </div>
@@ -389,6 +419,7 @@ Java, Spring Boot, React, PostgreSQL, AWS, Docker`}
             </Field>
           </div>
         </Section>
+        
 
         {/* ── Save button ── */}
         {updateMutation.isError && (
@@ -411,6 +442,53 @@ Java, Spring Boot, React, PostgreSQL, AWS, Docker`}
           </button>
         </div>
       </form>
+      <Section title="Security" icon={Shield} iconBg="bg-slate-50" iconColor="text-slate-500"
+          defaultOpen={false}>
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            {pwErr && (
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl">
+                {pwErr}
+              </div>
+            )}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Current Password
+              </label>
+              <input type="password" required value={pwForm.currentPassword}
+                onChange={e => setPwForm(p => ({ ...p, currentPassword: e.target.value }))}
+                placeholder="••••••••"
+                className={inputCls} />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  New Password
+                </label>
+                <input type="password" required value={pwForm.newPassword}
+                  onChange={e => setPwForm(p => ({ ...p, newPassword: e.target.value }))}
+                  placeholder="Min. 8 characters"
+                  className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Confirm New Password
+                </label>
+                <input type="password" required value={pwForm.confirmPassword}
+                  onChange={e => setPwForm(p => ({ ...p, confirmPassword: e.target.value }))}
+                  placeholder="••••••••"
+                  className={inputCls} />
+              </div>
+            </div>
+            <div className="flex justify-end pt-1">
+              <button type="submit" disabled={changePwMutation.isPending}
+                className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-60 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+                {changePwMutation.isPending
+                  ? <><Loader2 className="w-4 h-4 animate-spin" />Changing…</>
+                  : <><Shield className="w-4 h-4" />Change Password</>}
+              </button>
+            </div>
+          </form>
+        </Section>
     </div>
   );
 };

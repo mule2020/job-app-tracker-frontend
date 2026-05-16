@@ -1,5 +1,5 @@
 export interface DashboardStats {
-  total: number;
+  totalApplications: number;
   pending: number;
   applied: number;
   interviewing: number;
@@ -7,11 +7,13 @@ export interface DashboardStats {
   accepted: number;
   rejected: number;
   withdrawn: number;
+  totalResumes: number;
+  totalCoverLetters: number;
 }
 
 export interface ActivityItem {
-  id: number;
-  type: 'APPLICATION_CREATED' | 'RESUME_GENERATED' | 'COVER_LETTER_SAVED' | 'STATUS_UPDATED';
+  id: string;
+  type: 'APPLICATION_CREATED' | 'APPLICATION_UPDATED' | 'RESUME_GENERATED' | 'COVER_LETTER_SAVED' | 'STATUS_UPDATED'| 'RESUME_SAVED' | 'COVER_LETTER_GENERATED' ;
   description: string;
   company: string;
   jobTitle: string;

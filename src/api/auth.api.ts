@@ -15,3 +15,20 @@ export const refreshAccessToken = async (refreshToken: string): Promise<AuthResp
 
 export const logoutApi = async (refreshToken: string): Promise<AuthResponse> =>
   (await axiosClient.post<AuthResponse>('/auth/logout', { refreshToken })).data;
+
+export const changePassword = async (data: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}): Promise<AuthResponse> =>
+  (await axiosClient.put<AuthResponse>('/auth/change-password', data)).data;
+
+export const forgotPassword = async (email: string): Promise<AuthResponse> =>
+  (await axiosClient.post<AuthResponse>('/auth/forgot-password', { email })).data;
+
+export const resetPassword = async (data: {
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}): Promise<AuthResponse> =>
+  (await axiosClient.post<AuthResponse>('/auth/reset-password', data)).data;

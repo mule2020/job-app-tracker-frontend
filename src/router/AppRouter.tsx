@@ -15,15 +15,19 @@ import ResumeGenerate from '../pages/resume/ResumeGenerate';
 import CoverLetterList from '../pages/coverLetters/CoverLetterList';
 import CoverLetterGenerate from '../pages/coverLetters/CoverLetterGenerate';
 import Profile from '../pages/profile/Profile';
+import ResetPassword from '../pages/auth/ResetPassword';
+import ForgotPassword from '../pages/auth/ForgotPassword';
 
 const AppRouter = () => (
   <BrowserRouter>
     <Routes>
       {/* Public */}
-      <Route path="/"             element={<LandingPage />} />
-      <Route path="/login"        element={<Login />} />
-      <Route path="/register"     element={<Register />} />
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Protected — all share AppLayout */}
       <Route
@@ -31,18 +35,18 @@ const AppRouter = () => (
           <ProtectedRoute>
             <AppLayout />
           </ProtectedRoute>
-          
+
         }
       >
-        <Route path="/dashboard"               element={<Dashboard />} />
-        <Route path="/applications"            element={<ApplicationsList />} />
-        <Route path="/applications/new"        element={<ApplicationCreate />} />
-        <Route path="/applications/:id"        element={<ApplicationDetails />} />
-        <Route path="/resumes"                 element={<ResumeList />} />
-        <Route path="/resumes/generate"        element={<ResumeGenerate />} />
-        <Route path="/cover-letters"           element={<CoverLetterList />} />
-        <Route path="/cover-letters/generate"  element={<CoverLetterGenerate />} />
-        <Route path="/profile"                 element={<Profile />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/applications" element={<ApplicationsList />} />
+        <Route path="/applications/new" element={<ApplicationCreate />} />
+        <Route path="/applications/:id" element={<ApplicationDetails />} />
+        <Route path="/resumes" element={<ResumeList />} />
+        <Route path="/resumes/generate" element={<ResumeGenerate />} />
+        <Route path="/cover-letters" element={<CoverLetterList />} />
+        <Route path="/cover-letters/generate" element={<CoverLetterGenerate />} />
+        <Route path="/profile" element={<Profile />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

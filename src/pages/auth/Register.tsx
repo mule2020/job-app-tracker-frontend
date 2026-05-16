@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 const Register = () => {
   const { register } = useAuth();
   const [showPw, setShowPw] = useState(false);
-  const [form, setForm] = useState({ fullName: '', email: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' });
   const [err, setErr] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -15,7 +15,7 @@ const Register = () => {
     setErr('');
     if (form.password !== form.confirmPassword) return setErr('Passwords do not match.');
     if (form.password.length < 8) return setErr('Password must be at least 8 characters.');
-    register.mutate(form,{
+    register.mutate(form, {
       onSuccess: () => {
         toast.success("Account created successfully! Please check your email to verify your account.");
       },
@@ -51,9 +51,8 @@ const Register = () => {
           )}
           <form onSubmit={handleSubmit} className="space-y-5">
             {[
-              { label: 'Full Name',      key: 'fullName',        type: 'text',     placeholder: 'John Doe' },
-              { label: 'Email address',  key: 'email',           type: 'email',    placeholder: 'you@example.com' },
-              { label: 'Confirm Password', key: 'confirmPassword', type: 'password', placeholder: '••••••••' },
+              { label: 'Email address', key: 'email', type: 'email', placeholder: 'you@example.com' },
+              { label: 'Password', key: 'confirmPassword', type: 'password', placeholder: '••••••••' },
             ].map(f => (
               <div key={f.key}>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">{f.label}</label>
@@ -65,7 +64,7 @@ const Register = () => {
             ))}
             {/* Password with toggle */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Confirm Password</label>
               <div className="relative">
                 <input type={showPw ? 'text' : 'password'} required value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })}

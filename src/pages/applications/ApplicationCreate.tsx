@@ -5,6 +5,7 @@ import { useCreateApplication } from '../../hooks/useApplications';
 import type { ApplicationStatus } from '../../types/application.types';
 import { cleanJobDescription, wordCount } from '../../utils/textUtils';
 import { toast } from 'sonner';
+import { getErrorMessage } from '../../api/axiosClient';
 
 
 const STATUS_OPTIONS: { value: ApplicationStatus; label: string; color: string }[] = [
@@ -73,7 +74,7 @@ const ApplicationCreate = () => {
       },
       onError: (err: any) => {
         toast.dismiss(toastId);
-        toast.error(err?.response?.data?.message || "Failed to create application");
+        toast.error(getErrorMessage(err));
       },
     }
     );

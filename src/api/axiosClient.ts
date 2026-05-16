@@ -29,7 +29,6 @@ axiosClient.interceptors.response.use(
     const original = error.config;
     const status   = error.response?.status;
 
-    // Trigger refresh on 401 — now backend returns this cleanly
     if (status === 401 && !original._retry) {
       const storedRefresh = localStorage.getItem('refreshToken');
 
@@ -77,3 +76,13 @@ axiosClient.interceptors.response.use(
 );
 
 export default axiosClient;
+
+
+export const getErrorMessage = (error: any): string => {
+  return (
+    error?.response?.data?.message ??
+    error?.response?.data?.error ??
+    error?.message ??
+    'Something went wrong. Please try again.'
+  );
+};
