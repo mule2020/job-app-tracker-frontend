@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 const axiosClient = axios.create({
   baseURL: BASE_URL,
@@ -28,11 +28,10 @@ axiosClient.interceptors.response.use(
   res => res,
   async error => {
     const original = error.config;
-    const status   = error.response?.status;
+    const status = error.response?.status;
 
     if (status === 401 && !original._retry) {
 
-      // Don't try to refresh on auth endpoints 
       if (original.url?.includes('/auth/')) {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
@@ -50,12 +49,11 @@ axiosClient.interceptors.response.use(
       }
 
       original._retry = true;
-      isRefreshing    = true;
+      isRefreshing = true;
 
       try {
-        // Cookie sent automatically — no body needed 
         const res = await axios.post(
-          `${BASE_URL}/auth/refresh`,
+          `${BASE_URL}/api/auth/refresh`,
           {},
           {
             withCredentials: true,
