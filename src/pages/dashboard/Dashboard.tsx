@@ -39,15 +39,7 @@ const timeAgo = (iso: string) => {
   return `${Math.floor(h / 24)}d ago`;
 };
 
-const activityConfig = {
-  APPLICATION_CREATED: { color: 'bg-blue-500', label: 'New Application' },
-  APPLICATION_UPDATED: { color: 'bg-slate-400', label: 'Updated' },
-  RESUME_GENERATED: { color: 'bg-violet-500', label: 'Resume' },
-  COVER_LETTER_SAVED: { color: 'bg-cyan-500', label: 'Cover Letter' },
-  STATUS_UPDATED: { color: 'bg-emerald-500', label: 'Status Changed' },
-  RESUME_SAVED: { color: 'bg-cyan-500', label: 'Resume Saved' },
-  COVER_LETTER_GENERATED: { color: 'bg-violet-500', label: 'Cover Letter Generated' },
-};
+
 
 const CustomPieTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null;
@@ -376,7 +368,7 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="px-4 py-3 space-y-1">
-                {activity.data.map((item, i) => {
+                {activity.data.map((item) => {
                   const typeStyles: Record<string, { iconBg: string; iconColor: string; dot: string; badge: string; badgeText: string; label: string }> = {
                     APPLICATION_CREATED: { iconBg: 'bg-blue-50', iconColor: 'text-blue-600', dot: 'bg-blue-500', badge: 'bg-blue-50 border-blue-100', badgeText: 'text-blue-600', label: 'New Application' },
                     APPLICATION_UPDATED: { iconBg: 'bg-slate-50', iconColor: 'text-slate-500', dot: 'bg-slate-400', badge: 'bg-slate-50 border-slate-200', badgeText: 'text-slate-500', label: 'Updated' },

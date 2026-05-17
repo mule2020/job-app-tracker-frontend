@@ -96,7 +96,6 @@ const Profile = () => {
     currentPassword: '', newPassword: '', confirmPassword: ''
   });
   const [pwErr, setPwErr] = useState('');
-  const [showPws, setShowPws] = useState(false);
 
   // Populate form when profile loads
   useEffect(() => {

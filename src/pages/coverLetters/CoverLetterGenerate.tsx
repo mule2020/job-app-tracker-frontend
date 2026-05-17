@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Wand2, Save, Loader2, RefreshCw,
   Mail, Building2, CheckCircle2,
-  AlertCircle, Download, FileDown, Eye, Pencil
+  AlertCircle, Download, FileDown
 } from 'lucide-react';
 import { useApplications } from '../../hooks/useApplications';
 import { useGenerateCoverLetter, useSaveCoverLetter } from '../../hooks/useCoverLetters';

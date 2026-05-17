@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FileText, Plus, Trash2, Eye, Search,
+  FileText, Trash2, Eye, Search,
   Calendar, Building2, Briefcase, Wand2,
-  Download, FileDown, MoreHorizontal
+  Download, FileDown
 } from 'lucide-react';
 import { useResumes, useDeleteResume } from '../../hooks/useResumes';
 import { useToast } from '../../hooks/useToast';

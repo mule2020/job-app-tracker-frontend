@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Wand2, Save, Loader2, RefreshCw,
@@ -52,7 +52,6 @@ const ResumeGenerate = () => {
   const [searchParams] = useSearchParams();
   const preselectedId = searchParams.get('applicationId');
   const toast = useToast();
-  const exportRef = useRef<HTMLDivElement>(null);
 
   const { data: appsData, isLoading: appsLoading } = useApplications(0, 100);
   const apps = appsData?.content ?? [];
