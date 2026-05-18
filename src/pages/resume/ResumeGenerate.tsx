@@ -12,25 +12,156 @@ import RichTextEditor from '../../components/editor/RichTextEditor';
 import { exportToPDF, exportToWord } from '../../utils/exportUtils';
 import { getErrorMessage } from '../../api/axiosClient';
 
-// ── Convert plain text to basic HTML ─────────────────────
-const textToHtml = (text: string): string => {
+const stripMarkdown = (text: string): string => {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/__(.+?)__/g, '$1')
+    .replace(/_(.+?)_/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^#+\s+/gm, '');
+};
+
+const textToResumeHtml = (text: string): string => {
   const lines = text.split('\n');
   let html = '';
-  lines.forEach(line => {
+  let inList = false;
+
+  const SECTION_HEADERS = [
+    'CONTACT', 'SUMMARY', 'EXPERIENCE', 'EDUCATION',
+    'SKILLS', 'CERTIFICATIONS', 'PROJECTS', 'AWARDS',
+    'TECHNICAL SKILLS', 'PROFESSIONAL EXPERIENCE', 'WORK EXPERIENCE'
+  ];
+
+  const closeList = () => {
+    if (inList) { html += '</ul>'; inList = false; }
+  };
+
+  const firstContentIndex = lines.findIndex(l => l.trim());
+
+  lines.forEach((line, index) => {
     const trimmed = line.trim();
-    if (!trimmed) { html += '<p></p>'; return; }
-    if (trimmed === trimmed.toUpperCase() && trimmed.length > 2 && !/\d/.test(trimmed)) {
-      html += `<h2>${trimmed}</h2>`;
-    } else if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
-      html += `<ul><li>${trimmed.replace(/^[•\-\*]\s*/, '')}</li></ul>`;
-    } else {
-      html += `<p>${trimmed}</p>`;
+    if (!trimmed) {
+      closeList();
+      return;
     }
+
+    // first line = full name
+    if (index === firstContentIndex) {
+      closeList();
+      html += `<h1 class="resume-name">${trimmed}</h1>`;
+      return;
+    }
+
+    // section headers
+    if (SECTION_HEADERS.includes(trimmed.toUpperCase())) {
+      closeList();
+      html += `<div class="resume-section-header">${trimmed.toUpperCase()}</div><hr class="resume-divider"/>`;
+      return;
+    }
+
+    // bullet points
+    if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('+') || trimmed.startsWith('*')) {
+      if (!inList) { html += '<ul class="resume-list">'; inList = true; }
+      html += `<li>${trimmed.replace(/^[•\-\+\*]\s*/, '')}</li>`;
+      return;
+    }
+
+    // contact lines
+    if (
+      trimmed.includes('@') ||
+      trimmed.match(/\+?\d[\d\s\-().]{7,}/) ||
+      trimmed.toLowerCase().includes('linkedin') ||
+      trimmed.toLowerCase().includes('github') ||
+      trimmed.toLowerCase().includes('http') ||
+      trimmed.toLowerCase().includes('portfolio')
+    ) {
+      closeList();
+      html += `<p class="resume-contact-line">${trimmed}</p>`;
+      return;
+    }
+
+    // job/role lines
+    if (
+      trimmed.includes('—') || trimmed.includes('–') ||
+      trimmed.includes(' | ') ||
+      (trimmed.includes('(') && trimmed.includes(')') && trimmed.match(/\d{4}/))
+    ) {
+      closeList();
+      html += `<p class="resume-job-line"><strong>${trimmed}</strong></p>`;
+      return;
+    }
+
+    closeList();
+    html += `<p class="resume-body">${trimmed}</p>`;
   });
+
+  closeList();
   return html;
 };
 
-// ── Step indicator ────────────────────────────────────────
+const wrapInResumeTemplate = (content: string): string => `
+  <div class="resume-doc">
+    <style>
+      .resume-doc {
+        font-family: 'Arial', sans-serif;
+        font-size: 11pt;
+        color: #1a1a1a;
+        max-width: 794px;
+        margin: 0 auto;
+        padding: 48px 56px;
+        background: #ffffff;
+        line-height: 1.5;
+      }
+      .resume-name {
+        font-size: 22pt;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 6px 0;
+        letter-spacing: -0.5px;
+      }
+      .resume-contact-line {
+        font-size: 9.5pt;
+        color: #475569;
+        margin: 2px 0;
+      }
+      .resume-section-header {
+        font-size: 10pt;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        color: #0f172a;
+        margin: 20px 0 3px 0;
+        text-transform: uppercase;
+      }
+      .resume-divider {
+        border: none;
+        border-top: 1.5px solid #0f172a;
+        margin: 0 0 10px 0;
+      }
+      .resume-job-line {
+        font-size: 10.5pt;
+        margin: 8px 0 3px 0;
+        color: #0f172a;
+      }
+      .resume-list {
+        margin: 4px 0 8px 16px;
+        padding: 0;
+      }
+      .resume-list li {
+        font-size: 10.5pt;
+        color: #1e293b;
+        margin-bottom: 3px;
+      }
+      .resume-body {
+        font-size: 10.5pt;
+        color: #1e293b;
+        margin: 4px 0;
+      }
+    </style>
+    ${content}
+  </div>
+`;
+
 const Step = ({ n, label, active, done }: {
   n: number; label: string; active: boolean; done: boolean;
 }) => (
@@ -44,9 +175,9 @@ const Step = ({ n, label, active, done }: {
     </span>
   </div>
 );
+
 const Divider = () => <div className="flex-1 h-px bg-slate-200 hidden sm:block" />;
 
-// ── Main ──────────────────────────────────────────────────
 const ResumeGenerate = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -77,8 +208,10 @@ const ResumeGenerate = () => {
       { applicationId: selectedAppId },
       {
         onSuccess: (res) => {
-          setRawContent(res.generatedContent);
-          setHtmlContent(textToHtml(res.generatedContent));
+          const stripped = stripMarkdown(res.generatedContent);
+          setRawContent(stripped);
+          const bodyHtml = textToResumeHtml(stripped);
+          setHtmlContent(wrapInResumeTemplate(bodyHtml));
           setStep(2);
         },
         onError: () => toast.error('Generation failed. Make sure your profile is complete.'),
@@ -88,7 +221,7 @@ const ResumeGenerate = () => {
 
   const handleSave = () => {
     saveMutation.mutate(
-      { applicationId: selectedAppId, generatedContent: rawContent },
+      { applicationId: selectedAppId, generatedContent: htmlContent },
       {
         onSuccess: () => {
           toast.success('Resume saved successfully!');
@@ -103,6 +236,8 @@ const ResumeGenerate = () => {
   const handleExportPDF = async () => {
     setExporting(true);
     try {
+      const el = document.getElementById('resume-export-area');
+      if (el) el.innerHTML = htmlContent;
       await exportToPDF('resume-export-area', `${selectedApp?.company ?? 'resume'}-resume`);
       toast.success('PDF exported!');
     } catch {
@@ -136,7 +271,6 @@ const ResumeGenerate = () => {
         <ArrowLeft className="w-4 h-4" /> Back to Resumes
       </Link>
 
-      {/* Step bar */}
       <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-5 py-4 shadow-sm">
         <Step n={1} label="Select Job" active={step === 1} done={step > 1} />
         <Divider />
@@ -145,7 +279,6 @@ const ResumeGenerate = () => {
         <Step n={3} label="Saved!" active={step === 3} done={false} />
       </div>
 
-      {/* Step 1 */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center">
@@ -214,7 +347,6 @@ const ResumeGenerate = () => {
         </div>
       </div>
 
-      {/* Step 2 — Rich Text Editor */}
       {htmlContent && step === 2 && (
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden animate-fadeInUp">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
@@ -229,42 +361,37 @@ const ResumeGenerate = () => {
                 </span>
               )}
             </div>
-
-            {/* Export buttons */}
             <div className="flex items-center gap-2">
               <button onClick={handleExportPDF} disabled={exporting}
                 className="inline-flex items-center gap-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
-                <FileDown className="w-3.5 h-3.5" />
-                PDF
+                <FileDown className="w-3.5 h-3.5" /> PDF
               </button>
               <button onClick={handleExportWord} disabled={exporting}
                 className="inline-flex items-center gap-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
-                <Download className="w-3.5 h-3.5" />
-                Word
+                <Download className="w-3.5 h-3.5" /> Word
               </button>
             </div>
           </div>
 
-          {/* Editor */}
-          <div className="p-5">
-            {/* Hidden export area for PDF */}
-            <div id="resume-export-area" className="hidden">
-              <div className="p-8 bg-white" dangerouslySetInnerHTML={{ __html: htmlContent }} />
-            </div>
+          {/* hidden PDF export area */}
+          <div
+            id="resume-export-area"
+            className="fixed -left-[9999px] top-0 w-[794px] bg-white"
+            dangerouslySetInnerHTML={{ __html: htmlContent }}
+          />
 
+          <div className="p-5">
             <RichTextEditor
               content={htmlContent}
               onChange={(val) => {
                 setHtmlContent(val);
-                // also update raw for saving
                 setRawContent(val.replace(/<[^>]+>/g, '\n').replace(/\n{3,}/g, '\n\n').trim());
               }}
               placeholder="Your resume content will appear here…"
-              minHeight="500px"
+              minHeight="600px"
             />
           </div>
 
-          {/* Save bar */}
           <div className="px-5 pb-5 flex items-center gap-3 border-t border-slate-100 pt-4">
             <button onClick={handleSave} disabled={saveMutation.isPending}
               className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm shadow-violet-600/20">
@@ -280,7 +407,6 @@ const ResumeGenerate = () => {
         </div>
       )}
 
-      {/* Step 3 */}
       {step === 3 && (
         <div className="bg-white border border-emerald-200 rounded-2xl shadow-sm p-8 text-center animate-fadeInUp">
           <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
