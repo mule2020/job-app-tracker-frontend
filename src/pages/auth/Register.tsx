@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Briefcase, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { getErrorMessage } from '../../api/axiosClient';
 import { toast } from 'sonner';
 
 const Register = () => {
   const { register } = useAuth();
+  const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
   const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' });
   const [err, setErr] = useState('');
@@ -17,10 +19,11 @@ const Register = () => {
     if (form.password.length < 8) return setErr('Password must be at least 8 characters.');
     register.mutate(form, {
       onSuccess: () => {
-        toast.success("Account created successfully! Please check your email to verify your account.");
+        toast.success("Account created! Please check your email to verify your account.");
+        navigate('/verify-email');
       },
-      onError: () => {
-        toast.error("Failed to create account. Please try again.");
+      onError: (error: any) => {
+        toast.error(getErrorMessage(error));
       }
     });
   };
@@ -44,27 +47,25 @@ const Register = () => {
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
-          {(err || register.isError) && (
+          {err && (
             <div className="mb-5 bg-red-600/10 border border-red-600/30 text-red-400 text-sm px-4 py-3 rounded-xl">
-              {err || 'Registration failed. Please try again.'}
+              {err}
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {[
-              { label: 'Email address', key: 'email', type: 'email', placeholder: 'you@example.com' },
-              { label: 'Password', key: 'confirmPassword', type: 'password', placeholder: '••••••••' },
-            ].map(f => (
-              <div key={f.key}>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">{f.label}</label>
-                <input type={f.type} required value={(form as any)[f.key]}
-                  onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                  placeholder={f.placeholder}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
-              </div>
-            ))}
-            {/* Password with toggle */}
+
+            {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Confirm Password</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Email address</label>
+              <input type="email" required value={form.email}
+                onChange={e => setForm({ ...form, email: e.target.value })}
+                placeholder="you@example.com"
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
               <div className="relative">
                 <input type={showPw ? 'text' : 'password'} required value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })}
@@ -76,6 +77,16 @@ const Register = () => {
                 </button>
               </div>
             </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Confirm Password</label>
+              <input type="password" required value={form.confirmPassword}
+                onChange={e => setForm({ ...form, confirmPassword: e.target.value })}
+                placeholder="••••••••"
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
+            </div>
+
             <button type="submit" disabled={register.isPending}
               className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
               {register.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating account…</> : 'Create Account'}

@@ -18,6 +18,7 @@ import Profile from '../pages/profile/Profile';
 import ResetPassword from '../pages/auth/ResetPassword';
 import ForgotPassword from '../pages/auth/ForgotPassword';
 import { useAuthContext } from '../context/AuthContext';
+import JobsPage from '../pages/job/JobsPage';
 
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuthContext();
@@ -49,6 +50,7 @@ const AppRouter = () => (
         <Route path="/applications" element={<ApplicationsList />} />
         <Route path="/applications/new" element={<ApplicationCreate />} />
         <Route path="/applications/:id" element={<ApplicationDetails />} />
+        <Route path="/jobs" element={<JobsPage />} />
         <Route path="/resumes" element={<ResumeList />} />
         <Route path="/resumes/generate" element={<ResumeGenerate />} />
         <Route path="/cover-letters" element={<CoverLetterList />} />

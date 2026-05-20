@@ -1,11 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, FileText, Mail, User, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, Briefcase, FileText, Mail, User, LogOut, X, Search } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthContext } from '../context/AuthContext';
 
 const navItems = [
   { to: '/dashboard',     icon: LayoutDashboard, label: 'Dashboard'    },
   { to: '/applications',  icon: Briefcase,       label: 'Applications' },
+  { to: '/jobs',          icon: Search,          label: 'Find Jobs'    },
   { to: '/resumes',       icon: FileText,        label: 'Resumes'      },
   { to: '/cover-letters', icon: Mail,            label: 'Cover Letters'},
   { to: '/profile',       icon: User,            label: 'Profile'      },

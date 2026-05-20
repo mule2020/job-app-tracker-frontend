@@ -22,7 +22,6 @@ export const useAuth = () => {
 
   const registerMutation = useMutation({
     mutationFn: (data: RegisterRequest) => register(data),
-    onSuccess: () => navigate('/verify-email'),
   });
 
   return {
